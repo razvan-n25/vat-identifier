@@ -1,0 +1,4 @@
+company_number,company_name,postcode,website,page_url,vat_number,hmrc_valid,hmrc_name,hmrc_address,name_score,postcode_match,decision,verification_method,checked_at,http_status,error
+04019277,KEOPS LIMITED,WR11 4SN,https://logcabins.co.uk,https://www.logcabins.co.uk/privacy-policy,861397010,True,KEOPS LTD,"FIVE OAKS FARM, BADGERS HILL, SHERIFFS LENCH, EVESHAM, WR11 4SN, GB",100.0,True,VERIFIED_MATCH,HMRC_WEB_MANUAL,2026-08-14,,
+05104409,MARKETPLACE AMP LTD,SN2 8BW,https://marketplaceamp.com,https://marketplaceamp.com,852761903,True,MARKETPLACE AMP LTD,"53 PURE OFFICES, KEMBREY PARK, SWINDON, SN2 8BW, GB",100.0,True,VERIFIED_MATCH,HMRC_WEB_MANUAL,2026-08-14 18:39 BST,,
+08896326,NAGLE AND SISTERS LIMITED,E17 4BZ,https://www.nagleandsisters.com,https://www.nagleandsisters.com/pages/terms-and-conditions,316227425,False,,,,,REJECT_INVALID_VAT,HMRC_WEB_MANUAL,2026-08-14,,,
