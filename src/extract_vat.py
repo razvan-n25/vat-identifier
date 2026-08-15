@@ -55,12 +55,16 @@ def main() -> None:
     parser.add_argument("--input", type=Path, default=Path("results/crawl_results.csv"))
     parser.add_argument("--output", type=Path, default=Path("results/vat_candidates.csv"))
     parser.add_argument("--include-invalid", action="store_true")
+    parser.add_argument("--include-unlabelled", action="store_true",
+                        help="include checksum-valid digit sequences without a nearby VAT label")
     args = parser.parse_args()
     output: list[dict[str, object]] = []
     with args.input.open("r", encoding="utf-8-sig", newline="") as stream:
         for row in csv.DictReader(stream):
             for candidate in extract_candidates(row.get("text", "")):
                 if not args.include_invalid and not candidate["checksum_valid"]:
+                    continue
+                if not args.include_unlabelled and not candidate["label_nearby"]:
                     continue
                 output.append({"company_number": row.get("company_number", ""),
                                "company_name": row.get("company_name", ""),

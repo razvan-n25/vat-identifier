@@ -40,9 +40,18 @@ def test_name_normalisation_and_acceptance():
     )
     assert score == 100
     assert postcode_match is True
-    assert decision == "accept"
+    assert decision == "VERIFIED_MATCH"
 
 
 def test_ambiguous_identity_goes_to_review():
     _, _, decision = classify("Alpha Engineering Ltd", "", "Alpha Holdings Limited", "Somewhere")
-    assert decision == "manual_review"
+    assert decision == "MANUAL_REVIEW"
+
+
+def test_matching_name_without_matching_postcode_requires_review():
+    _, postcode_match, decision = classify(
+        "J Smith Building Services Ltd", "SW1A 1AA",
+        "J Smith Building Services Limited", "London, EC1A 1BB",
+    )
+    assert postcode_match is False
+    assert decision == "MANUAL_REVIEW"

@@ -15,7 +15,7 @@ OUTPUT_FIELDS = ["company_number", "company_name", "company_status", "company_ca
 STRATA = {
     "manufacturing": tuple(f"{code:02d}" for code in range(10, 34)),
     "construction": ("41", "42", "43"),
-    "wholesale_trade": ("45", "46"),
+    "trade": ("45", "46"),
     "business_services": ("62", "69", "70", "71", "72", "73", "74"),
 }
 
@@ -66,7 +66,7 @@ def reservoir_sample(paths: list[Path], size: int, seed: int) -> tuple[list[dict
             for raw in csv.DictReader(stream):
                 raw = {(key or "").strip(): value for key, value in raw.items()}
                 company = normalise_company(raw, path.name)
-                if company["company_status"] and company["company_status"].casefold() != "active":
+                if company["company_status"].casefold() != "active":
                     continue
                 if not company["company_number"] or not company["company_name"]:
                     continue

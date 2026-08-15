@@ -33,12 +33,12 @@ def classify(company_name: str, company_postcode: str, hmrc_name: str, hmrc_addr
     score = round(ratio(normalise_name(company_name), normalise_name(hmrc_name)), 1)
     target_postcode, returned_postcode = postcode(company_postcode), postcode(hmrc_address)
     postcodes_agree = bool(target_postcode and returned_postcode and target_postcode == returned_postcode)
-    if score >= 90 or (score >= 75 and postcodes_agree):
-        decision = "accept"
+    if score >= 90 and postcodes_agree:
+        decision = "VERIFIED_MATCH"
     elif score < 60 and target_postcode and returned_postcode and not postcodes_agree:
-        decision = "reject_wrong_entity"
+        decision = "REJECT_WRONG_ENTITY"
     else:
-        decision = "manual_review"
+        decision = "MANUAL_REVIEW"
     return score, postcodes_agree, decision
 
 
@@ -84,10 +84,10 @@ def main() -> None:
                 result.update({"hmrc_name": target.get("name", ""), "hmrc_address": address,
                                "name_score": score, "postcode_match": postcode_match, "decision": decision})
             else:
-                result["decision"] = "reject_invalid_vat"
+                result["decision"] = "REJECT_INVALID_VAT"
         except requests.RequestException as exc:
             result["error"] = f"{type(exc).__name__}: {exc}"
-            result["decision"] = "verification_error"
+            result["decision"] = "VERIFICATION_ERROR"
         output.append(result)
         time.sleep(args.delay)
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -95,7 +95,7 @@ def main() -> None:
         writer = csv.DictWriter(stream, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(output)
-    accepted = sum(row["decision"] == "accept" for row in output)
+    accepted = sum(row["decision"] == "VERIFIED_MATCH" for row in output)
     print(f"candidates={len(output)} accepted={accepted}")
 
 

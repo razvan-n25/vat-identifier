@@ -61,7 +61,7 @@ def crawl(row: dict[str, str], max_pages: int, delay: float, timeout: float) -> 
     session.headers["User-Agent"] = USER_AGENT
     while queue and len(output) < max_pages:
         url = queue.popleft()
-        if url in seen or (robot and not robot.can_fetch(USER_AGENT, url)):
+        if url in seen:
             continue
         seen.add(url)
         started = time.perf_counter()
@@ -70,6 +70,12 @@ def crawl(row: dict[str, str], max_pages: int, delay: float, timeout: float) -> 
                                     "postcode": row.get("postcode", ""),
                                     "website": website, "page_url": url, "status": "", "content_type": "",
                                     "elapsed_ms": "", "error": "", "text": ""}
+        if robot and not robot.can_fetch(USER_AGENT, url):
+            record["status"] = "ROBOTS_DISALLOWED"
+            record["error"] = "Disallowed by robots.txt"
+            record["elapsed_ms"] = round((time.perf_counter() - started) * 1000)
+            output.append(record)
+            continue
         try:
             response = session.get(url, timeout=timeout, allow_redirects=True)
             record["status"] = response.status_code

@@ -69,7 +69,7 @@ Filtre și categorii:
 
 - numai companii active;
 - numărul și numele companiei sunt obligatorii;
-- codul SIC principal trebuie să aparțină producției (10–33), construcțiilor (41–43), comerțului cu ridicata (45–46) sau anumitor servicii pentru companii (62, 69–74);
+- codul SIC principal trebuie să aparțină producției (10–33), construcțiilor (41–43), comerțului și reparării autovehiculelor/comerțului cu ridicata (45–46) sau anumitor servicii pentru companii (62, 69–74);
 - au fost selectate uniform câte 15 companii din fiecare categorie prin reservoir sampling;
 - seed aleatoriu: `42`.
 
@@ -115,9 +115,11 @@ Concluzie: procurement este o sursă promițătoare numai dacă putem selecta do
 
 Pentru fiecare companie s-a încercat identificarea website-ului oficial folosind numele juridic, numărul Companies House, adresa/localitatea și, unde a fost util, denumirea comercială. Fiecare dintre cele 60 de companii are un rezultat în `results/website_candidates.csv`, inclusiv atunci când nu a fost găsit niciun domeniu.
 
+Această etapă a fost research manual asistat de căutare web, nu un proces complet automat. Au fost folosite combinații ale numelui juridic, numărului companiei, codului poștal și termenului `VAT`, dar nu au fost înregistrate pentru toate cele 60 motorul, ordinea exactă, numărul de rezultate inspectate sau timpul consumat. Prin urmare, rata `47 UNRESOLVED` este un rezultat al procesului efectuat, dar website discovery nu este complet reproductibil și costul său nu poate fi măsurat din logurile actuale. Un experiment următor trebuie să fixeze query-urile, limita de rezultate și regula de oprire înainte de rulare.
+
 Descoperirea website-urilor a produs 4 rezultate `CONFIDENT`, 6 `PROVISIONAL`, 3 `AMBIGUOUS_RELATED_ENTITY` și 47 `UNRESOLVED`. Domeniile ambigue au fost excluse intenționat: un brand înrudit sau o adresă comună nu demonstrează că VAT-ul aparține entității juridice din eșantion. Crawlerul a primit toate cele 10 domenii `CONFIDENT` sau `PROVISIONAL`; pentru celelalte companii nu exista un URL de pornire suficient de sigur.
 
-Cele zece domenii eligibile au produs 49 de încercări de accesare a paginilor. Șase domenii au returnat cel puțin o pagină HTTP 200, trei au eșuat la nivel de conexiune/DNS, iar unul nu a produs nicio înregistrare deoarece `robots.txt` a exclus crawlingul. Ultimul caz a scos la iveală o problemă de observabilitate: excluderile impuse de `robots.txt` ar trebui înregistrate explicit, nu omise fără explicație.
+Cele zece domenii eligibile au produs 49 de încercări HTTP și o decizie explicită `ROBOTS_DISALLOWED`. Șase domenii au returnat cel puțin o pagină HTTP 200, trei au eșuat la nivel de conexiune/DNS, iar unul a fost exclus prin `robots.txt`. Logul conține acum și rândul de excludere; crawlerul a fost corectat pentru ca rulările viitoare să nu mai omită astfel de cazuri.
 
 Crawlul extins a găsit un candidat nou care trece verificarea checksum, `316227425`, în pagina de termeni a Nagle and Sisters. Pagina oferă dovezi neobișnuit de puternice pentru descoperire: afișează împreună numele juridic, numărul companiei `08896326`, codul poștal înregistrat `E17 4BZ` și numărul VAT. Cu toate acestea, instrumentul oficial HMRC a indicat la 14 august 2026 că numărul este invalid. Rezultatul este înregistrat ca `REJECT_INVALID_VAT`. Explicațiile posibile includ conținut învechit pe website sau anularea înregistrării VAT; experimentul nu poate distinge între ele.
 
@@ -161,8 +163,8 @@ Acest experiment mic, cu randament zero, nu demonstrează că documentele public
 
 - `src/sample_companies.py`: eșantionare stratificată, deterministă, prin reservoir sampling și procesare în flux;
 - `src/crawl_sites.py`: crawler limitat la același host, care respectă `robots.txt` și prioritizează paginile juridice/de contact;
-- `src/extract_vat.py`: extragerea candidaților, normalizare, păstrarea contextului și filtrare prin checksum pentru UK;
-- `src/verify_results.py`: interogare autentificată HMRC v2 și decizie conservatoare pe baza numelui/adresei;
+- `src/extract_vat.py`: extragerea candidaților, normalizare, păstrarea contextului și filtrare prin checksum pentru UK; implicit, numai candidații cu eticheta `VAT` în apropiere sunt eligibili;
+- `src/verify_results.py`: interogare autentificată HMRC v2 și decizie conservatoare; acceptarea automată necesită atât un scor al numelui de cel puțin 90, cât și același cod poștal;
 - `tests/test_extraction.py`: teste pentru checksum, formatare, deduplicare și decizia privind entitatea.
 
 Rulare locală:
@@ -176,7 +178,9 @@ $env:HMRC_ACCESS_TOKEN = "..."
 python src/verify_results.py
 ```
 
-Ultima rulare a testelor a produs `6 passed`.
+Proiectul a fost testat cu Python `3.12.10`. Ultima rulare a testelor a produs `7 passed`.
+
+Fișierul publicat `results/verified_results.csv` a fost completat pe baza verificărilor manuale efectuate în serviciul web oficial HMRC. Integrarea API din `verify_results.py` este inclusă ca implementare orientată spre producție, dar nu a fost executată pentru aceste rezultate deoarece nu au fost disponibile credențiale OAuth în intervalul proiectului. Coloana `verification_method` separă explicit `HMRC_WEB_MANUAL` de eventualele rezultate viitoare `HMRC_API_V2`.
 
 ## Acceptare și măsurare
 
@@ -187,6 +191,8 @@ O potrivire finală acceptată necesită:
 - un răspuns HMRC valid;
 - un nume juridic/comercial și/sau o adresă compatibilă;
 - verificare manuală pentru cazurile ambigue care implică grupuri de firme, denumiri comerciale sau adrese comune.
+
+Vocabularul deciziilor este comun codului și fișierelor de rezultate: `VERIFIED_MATCH`, `REJECT_INVALID_VAT`, `REJECT_WRONG_ENTITY`, `MANUAL_REVIEW` și `VERIFICATION_ERROR`.
 
 Raportul final calculează:
 
@@ -238,7 +244,8 @@ Datele măsurate în acest proof of concept sunt:
 | Companii încercate | 60 |
 | Domenii confirmate/provizorii | 10 |
 | Domenii cu cel puțin un HTTP 200 | 6 |
-| Pagini înregistrate | 49 |
+| Încercări HTTP înregistrate | 49 |
+| Decizii `ROBOTS_DISALLOWED` | 1 |
 | Candidați unici care trec checksum | 3 |
 | Verificări HMRC efectuate | 3 |
 | Potriviri acceptate și verificate manual | 2 |
