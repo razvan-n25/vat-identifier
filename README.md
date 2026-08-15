@@ -54,7 +54,7 @@ Termenii folosiți în document:
 
 Rezultatul oficial al proiectului se bazează exclusiv pe cele 60 de companii. Nu am creat o cohortă separată din firme despre care știam deja că au website sau publică VAT, deoarece aceasta ar fi crescut artificial rata de succes.
 
-Primele 10 companii au fost folosite pentru dezvoltarea pilotului, iar un subset reproductibil de 20 a fost folosit pentru testarea căutării directe în documente publice. Ambele sunt subseturi ale acelorași 60 de companii și au rol experimental. Procentele lor nu sunt combinate și nu înlocuiesc coverage-ul principal `2/60`.
+Metoda a fost dezvoltată incremental, apoi aplicată întregului eșantion. Toate rezultatele principale folosesc numitorul complet de 60 de companii. Un subset reproductibil de 20 a fost folosit numai pentru un experiment separat cu surse alternative; rezultatul lui nu înlocuiește și nu modifică coverage-ul principal `2/60`.
 
 Sursă: snapshotul Companies House Free Company Data Product din 1 august 2026. Fișierul CSV-sursă nu este inclus în repository deoarece are aproximativ 2,8 GB.
 
@@ -111,57 +111,22 @@ Contracts Finder conține chestionare și documente contractuale care cer explic
 
 Concluzie: procurement este o sursă promițătoare numai dacă putem selecta documente contractuale finale sau formulare completate. O căutare largă după șabloane produce multe potriviri lexicale, dar puține dovezi atribuibile. Documentele cu placeholder nu sunt numărate drept candidați. Matricea surselor și deciziilor se află în `results/source_research.csv`.
 
-### Căutare web după numele exact și numărul companiei: pilotul cu zece companii
+## Experimentul end-to-end pe cele 60 de companii
 
-Primele zece companii din eșantion au fost căutate folosind numele juridic, numărul companiei, adresa/localitatea și, unde a fost util, indicii despre denumirea comercială. Rezultatele au fost înregistrate inclusiv atunci când nu a fost găsit niciun domeniu.
+Pentru fiecare companie s-a încercat identificarea website-ului oficial folosind numele juridic, numărul Companies House, adresa/localitatea și, unde a fost util, denumirea comercială. Fiecare dintre cele 60 de companii are un rezultat în `results/website_candidates.csv`, inclusiv atunci când nu a fost găsit niciun domeniu.
 
-Rezultatele măsurate pentru descoperirea website-urilor:
-
-- 10 companii analizate;
-- 2 domenii marcate `CONFIDENT`: KEOPS și Marketplace AMP;
-- 1 domeniu marcat `PROVISIONAL`: Lawson Shopfitters, cu nume și adresă corespunzătoare, dar cu dovada inițială provenită dintr-un director;
-- 1 domeniu marcat `AMBIGUOUS_RELATED_ENTITY`: site-ul Cheddar menționează o altă societate cu răspundere limitată la adresa corespunzătoare;
-- 6 domenii marcate `UNRESOLVED`.
-
-Cazul ambiguu Cheddar a fost exclus intenționat de la crawling: un brand înrudit și o adresă comună nu demonstrează că numărul VAT aparține entității juridice din eșantion. Dovezile și stările complete se află în `results/website_candidates.csv`.
-
-### Crawling controlat și extragerea VAT: pilotul cu zece companii
-
-Au fost accesate numai cele două domenii confirmate și domeniul provizoriu. Toate cele 22 de pagini HTML încercate au răspuns cu succes: 8 pagini KEOPS, 8 pagini Marketplace AMP și 6 pagini Lawson Shopfitters. Au fost extrase două numere unice, etichetate explicit, care trec verificarea checksum:
-
-- `861397010`, din pagina de confidențialitate KEOPS;
-- `852761903`, repetat în footerul Marketplace AMP lângă numărul companiei `05104409`.
-
-Lawson nu a produs niciun candidat în cele șase pagini accesate. Repetarea numărului Marketplace pe șapte pagini este considerată un singur candidat pentru companie, nu șapte descoperiri.
-
-Ambii candidați unici au fost verificați manual în instrumentul oficial HMRC la 14 august 2026:
-
-- `861397010` a returnat `KEOPS LTD`, Five Oaks Farm, Badgers Hill, Sheriffs Lench, Evesham, `WR11 4SN`;
-- `852761903` a returnat `MARKETPLACE AMP LTD`, 53 Pure Offices, Kembrey Park, Swindon, `SN2 8BW`.
-
-Pentru ambele rezultate, scorul normalizat al numelui juridic este 100, iar codul poștal corespunde exact cu Companies House. Acestea sunt înregistrate ca `VERIFIED_MATCH` în `results/verified_results.csv`.
-
-### Rezultatele pilotului
-
-| Etapă | Companii | Rată din cele 10 selectate |
-|---|---:|---:|
-| Selectate pentru pilot | 10 | 100% |
-| Website-uri confirmate/provizorii | 3 | 30% |
-| Website-uri accesate cu succes | 3 | 30% |
-| Candidați VAT unici | 2 | 20% |
-| Candidați valizi conform HMRC | 2 | 20% |
-| Potriviri cu identitatea confirmată | 2 | 20% |
-| Potriviri finale acceptate | 2 | 20% |
-
-Acoperirea pilotului este `2 / 10 = 20%`. Ambele potriviri acceptate au fost verificate manual și nu a fost observat niciun rezultat fals pozitiv: `0 / 2`. Aceasta **nu** reprezintă o precizie garantată de 100%; două rezultate verificate sunt mult prea puține pentru o estimare strictă a preciziei. Companiile rămase fără o potrivire acceptată nu sunt clasificate drept neînregistrate în scopuri VAT.
-
-## Prima trecere pe eșantionul complet de 60 de companii
-
-Aceeași metodă de căutare exactă a fost aplicată celorlalte 50 de companii la 14 august 2026. Pentru întregul eșantion, descoperirea website-urilor a produs 4 rezultate `CONFIDENT`, 6 `PROVISIONAL`, 3 `AMBIGUOUS_RELATED_ENTITY` și 47 `UNRESOLVED`. Domeniile asociate unor entități înrudite, dar ambigue, au fost excluse de la crawling.
+Descoperirea website-urilor a produs 4 rezultate `CONFIDENT`, 6 `PROVISIONAL`, 3 `AMBIGUOUS_RELATED_ENTITY` și 47 `UNRESOLVED`. Domeniile ambigue au fost excluse intenționat: un brand înrudit sau o adresă comună nu demonstrează că VAT-ul aparține entității juridice din eșantion. Crawlerul a primit toate cele 10 domenii `CONFIDENT` sau `PROVISIONAL`; pentru celelalte companii nu exista un URL de pornire suficient de sigur.
 
 Cele zece domenii eligibile au produs 49 de încercări de accesare a paginilor. Șase domenii au returnat cel puțin o pagină HTTP 200, trei au eșuat la nivel de conexiune/DNS, iar unul nu a produs nicio înregistrare deoarece `robots.txt` a exclus crawlingul. Ultimul caz a scos la iveală o problemă de observabilitate: excluderile impuse de `robots.txt` ar trebui înregistrate explicit, nu omise fără explicație.
 
 Crawlul extins a găsit un candidat nou care trece verificarea checksum, `316227425`, în pagina de termeni a Nagle and Sisters. Pagina oferă dovezi neobișnuit de puternice pentru descoperire: afișează împreună numele juridic, numărul companiei `08896326`, codul poștal înregistrat `E17 4BZ` și numărul VAT. Cu toate acestea, instrumentul oficial HMRC a indicat la 14 august 2026 că numărul este invalid. Rezultatul este înregistrat ca `REJECT_INVALID_VAT`. Explicațiile posibile includ conținut învechit pe website sau anularea înregistrării VAT; experimentul nu poate distinge între ele.
+
+Ceilalți doi candidați unici au fost confirmați manual în instrumentul oficial HMRC la 14 august 2026:
+
+- `861397010`, găsit pe pagina de confidențialitate KEOPS, a returnat `KEOPS LTD` și codul poștal `WR11 4SN`;
+- `852761903`, publicat în footerul Marketplace AMP lângă numărul companiei `05104409`, a returnat `MARKETPLACE AMP LTD` și codul poștal `SN2 8BW`.
+
+Pentru ambele, numele și codul poștal corespund datelor Companies House. Ele sunt înregistrate o singură dată ca asocieri finale `VERIFIED_MATCH` în `results/verified_results.csv`, chiar dacă același VAT apare ca dovadă pe mai multe pagini în `results/vat_candidates.csv`.
 
 | Etapa pentru eșantionul complet | Companii | Rată din cele 60 selectate |
 |---|---:|---:|
