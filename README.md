@@ -159,7 +159,7 @@ Acoperirea măsurată după prima trecere este `2 / 60 = 3,3%`. HMRC a respins u
 
 ### Explorare suplimentară pe surse publice
 
-Pentru a evalua dacă sursele publice suplimentare aduc valoare peste website-ul principal, am aplicat o verificare directă pe întreaga cohortă de 60 de companii. La 14 august 2026, fiecare nume juridic exact a fost căutat împreună cu termenul `VAT`; rezultatele relevante au fost clasificate, fără a considera automat fiecare rezultat drept dovadă. Istoricul detaliat pentru fiecare rând se află în `results/source_experiments.csv`.
+Pentru a evalua dacă sursele publice suplimentare aduc valoare peste website-ul principal, am aplicat o verificare directă pe întreaga cohortă de 60 de companii. La fiecare nume juridic exact a fost căutat împreună cu termenul `VAT`; rezultatele relevante au fost clasificate, fără a considera automat fiecare rezultat drept dovadă. Istoricul detaliat pentru fiecare rând se află în `results/source_experiments.csv`.
 
 | Etapa căutării directe | Companii | Rată din cele 60 analizate |
 |---|---:|---:|
