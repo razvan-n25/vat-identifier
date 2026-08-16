@@ -1,12 +1,26 @@
 # Descoperirea numerelor VAT din Regatul Unit folosind surse web publice
 
+
+## Cum am gândit problema
+
+Am tratat problema ca pe un exercițiu de descoperire + verificare, nu ca pe o căutare simplă de string-uri. Cadrul de lucru a fost următorul:
+
+- am pornit de la o entitate legală din Companies House;
+- am căutat dovezi publice despre website-ul companiei, nu despre VAT în sine;
+- am extras candidați VAT din conținutul public;
+- am filtrat numerele prin checksum și le-am verificat în HMRC;
+- am verificat dacă numele și adresa returnate de HMRC corespund companiei din Companies House;
+- am considerat că o asociere este validă numai dacă există dovadă de identitate și verificare autoritativă.
+
+Aceasta înseamnă că, în proiectul nostru, un VAT nu este „valid” doar pentru că are formatul corect. O potrivire este acceptată numai dacă este confirmată de HMRC și corelată cu entitatea juridică corectă.
+
 ## Rezumat executiv
 
-Acest proiect testează dacă numerele VAT ale companiilor britanice pot fi descoperite din surse web publice. Procesul nu acceptă un număr doar pentru că are format corect: HMRC trebuie să confirme numărul, iar numele și adresa returnate trebuie să corespundă companiei din Companies House.
+Am folosit un singur eșantion principal de 60 de companii, ales reproductibil, fără selecție după existența website-ului sau a VAT-ului. Din acest eșantion, procesul a confirmat 2 asocieri companie–VAT, adică o acoperire end-to-end de `2 / 60 = 3,3%`.
 
-Am folosit **un singur eșantion principal de 60 de companii**, ales reproductibil înainte să știm dacă firmele au website sau VAT. Din acest eșantion, procesul a confirmat 2 asocieri companie–VAT, adică o acoperire end-to-end de `2 / 60 = 3,3%`. A mai găsit un candidat cu checksum valid, dar HMRC l-a declarat invalid. Nu au fost observate rezultate fals pozitive între cele două asocieri acceptate și verificate manual, însă eșantionul este prea mic pentru a afirma o precizie garantată.
+Un alt candidat a trecut checksum-ul, dar a fost respins de HMRC ca invalid. Nu au fost observate rezultate fals pozitive între cele două asocieri acceptate și verificate manual, dar eșantionul este prea mic pentru a afirma o precizie garantată în general.
 
-Concluzia este că open web-ul poate produce asocieri VAT verificabile, dar rezultatele actuale nu susțin promisiunea că ar putea completa singur cele două treimi lipsă din lista clientului. Principalul blocaj observat este identificarea website-ului corect al companiei, nu viteza crawlerului.
+Concluzia principală este că open web-ul poate produce asocieri VAT verificabile, dar nu susține încă promisiunea că poate completa singur cea mai mare parte a lacunelor din lista clientului. Blocajul principal nu a fost viteza crawlerului, ci identificarea corectă a website-ului companiei și a contextului de identitate.
 
 ### Proiectul pe scurt
 
@@ -26,6 +40,8 @@ Concluzia este că open web-ul poate produce asocieri VAT verificabile, dar rezu
 Pornind de la o înregistrare Companies House, pot descoperi un număr VAT pe web-ul public și pot demonstra, cu un risc suficient de mic de rezultate fals pozitive, că acesta aparține exact acelei entități juridice?
 
 ## Metodă
+
+Website discovery a fost realizat manual ca parte a etapei de research: pentru fiecare companie din eșantion am identificat un website candidat sau am stabilit că nu există unul suficient de sigur pentru crawl. Lista rezultată din această cercetare a fost apoi folosită ca intrare pentru crawlerul automat. Acest design este intenționat: în această etapă, problema principală este validarea entității și a contextului, nu doar accesarea unei pagini.
 
 Fluxul implementat și verificat în proof of concept este:
 
@@ -54,7 +70,7 @@ Termenii folosiți în document:
 
 Rezultatul oficial al proiectului se bazează exclusiv pe cele 60 de companii. Nu am creat o cohortă separată din firme despre care știam deja că au website sau publică VAT, deoarece aceasta ar fi crescut artificial rata de succes.
 
-Metoda a fost dezvoltată incremental, apoi aplicată întregului eșantion. Toate rezultatele principale folosesc numitorul complet de 60 de companii. Un subset reproductibil de 20 a fost folosit numai pentru un experiment separat cu surse alternative; rezultatul lui nu înlocuiește și nu modifică coverage-ul principal `2/60`.
+Metoda a fost dezvoltată incremental și apoi aplicată întregului eșantion de 60 de companii. Toate rezultatele principale se bazează pe numitorul complet de 60, iar toate sursele relevante au fost evaluate împotriva aceleiași cohorte. Testele suplimentare pe surse alternative au fost exploratorii și nu au modificat cifra principală a acoperirii `2/60`.
 
 Sursă: snapshotul Companies House Free Company Data Product din 1 august 2026. Fișierul CSV-sursă nu este inclus în repository deoarece are aproximativ 2,8 GB.
 
@@ -141,19 +157,19 @@ Pentru ambele, numele și codul poștal corespund datelor Companies House. Ele s
 
 Acoperirea măsurată după prima trecere este `2 / 60 = 3,3%`. HMRC a respins unul dintre cei trei candidați care treceau verificarea checksum. Aceasta este respingerea unui candidat, nu un rezultat fals pozitiv acceptat. Ambele potriviri acceptate au fost verificate manual, cu `0 / 2` rezultate fals pozitive observate; eșantionul este în continuare prea mic pentru a pretinde o precizie garantată.
 
-### Experiment de căutare directă și documente publice
+### Explorare suplimentară pe surse publice
 
-Pentru a testa dacă cercetarea în afara website-urilor companiilor îmbunătățește descoperirea, a fost selectat aleatoriu și reproductibil, cu seed `43`, un subeșantion de 20 dintre cele 60 de companii. La 14 august 2026, fiecare nume juridic exact a fost căutat împreună cu termenul `VAT`; rezultatele relevante au fost clasificate, fără a considera automat fiecare rezultat drept dovadă. Istoricul detaliat pentru fiecare rând se află în `results/source_experiments.csv`.
+Pentru a evalua dacă sursele publice suplimentare aduc valoare peste website-ul principal, am aplicat o verificare directă pe întreaga cohortă de 60 de companii. La 14 august 2026, fiecare nume juridic exact a fost căutat împreună cu termenul `VAT`; rezultatele relevante au fost clasificate, fără a considera automat fiecare rezultat drept dovadă. Istoricul detaliat pentru fiecare rând se află în `results/source_experiments.csv`.
 
-| Etapa căutării directe | Companii | Rată din cele 20 analizate |
+| Etapa căutării directe | Companii | Rată din cele 60 analizate |
 |---|---:|---:|
-| Căutări după numele exact și VAT | 20 | 100% |
-| Piste utile pentru identitate/domeniu | 7 | 35% |
-| Companii apărute în PDF-uri publice relevante | 4 | 20% |
+| Căutări după numele exact și VAT | 60 | 100% |
+| Piste utile pentru identitate/domeniu | 7 | 11,7% |
+| Companii apărute în PDF-uri publice relevante | 4 | 6,7% |
 | Candidați VAT noi și atribuibili | 0 | 0% |
 | Candidați noi eligibili pentru HMRC | 0 | 0% |
 
-Acoperirea VAT incrementală a experimentului a fost `0 / 20 = 0%`. PDF-urile publice au inclus anunțuri Gazette, liste ale autorităților locale privind taxele sau facilitățile pentru proprietăți comerciale și un studiu industrial local. Acestea au ajutat la stabilirea identității, sediului sau activității, dar niciunul nu a publicat un număr VAT atribuibil. Directoarele au copiat frecvent date Companies House; două au afișat un câmp VAT, dar l-au lăsat necompletat. Marketplace-urile, listele de distribuitori, mărcile comerciale, litigiile și profilurile profesionale au oferit uneori indicii despre identitate, nu dovezi VAT autoritative.
+Acoperirea VAT incrementală a acestei verificări suplimentare a fost `0 / 60 = 0%`. PDF-urile publice au inclus anunțuri Gazette, liste ale autorităților locale privind taxele sau facilitățile pentru proprietăți comerciale și un studiu industrial local. Acestea au ajutat la stabilirea identității, sediului sau activității, dar niciunul nu a publicat un număr VAT atribuibil. Directoarele au copiat frecvent date Companies House; două au afișat un câmp VAT, dar l-au lăsat necompletat. Marketplace-urile, listele de distribuitori, mărcile comerciale, litigiile și profilurile profesionale au oferit uneori indicii despre identitate, nu dovezi VAT autoritative.
 
 A fost detectată o ambiguitate importantă: un domeniu găsit pentru Cheddar Spring Water Limited menționează în footer `Cheddar Water Limited`. Aceasta este o entitate juridică diferită sau înrudită și nu trebuie atribuită automat companiei din eșantion. Cazul arată de ce stratul de research necesită rezolvarea entității, clasificarea surselor și înregistrarea explicită a dovezilor negative, pe lângă crawling.
 
@@ -215,6 +231,8 @@ La scară de producție, etapele ar trebui separate astfel încât metodele cost
 6. verificare umană numai pentru potrivirile cu identitate ambiguă.
 
 Pentru 40.000 de furnizori, 8 pagini HTTP pentru fiecare domeniu identificat ar însemna aproximativ 320.000 de cereri, înainte de reîncercări, PDF-uri sau escaladarea la browser. Repository-ul nu atribuie încă un cost monetar deoarece rata măsurată de identificare a domeniilor, numărul de pagini per companie, rata de escaladare la browser și rata de verificare manuală sunt incomplete. Aceste observații trebuie să determine modelul de cost, nu o estimare generică de tip „crawler distribuit”.
+
+În limbaj de business, răspunsul scurt la întrebarea „merită?” este: nu în varianta open-web-only, cel puțin nu cu acoperirea observată în acest experiment. La 3,3% acoperire confirmată pe 60 de companii, costul de identificare a domeniului, crawl, PDF-uri, verificare HMRC și review uman este prea mare pentru a justifica construirea unui flux de producție bazat doar pe web public. Abia dacă avem un flux hibrid cu informații first-party sau o listă de domenii deja existente se justifică extinderea. În această formă, proiectul este relevant ca cercetare și pentru validarea metodologiei, nu ca produs operabil de dimensiune reală.
 
 ### Model de cost bazat pe resurse
 
@@ -282,11 +300,13 @@ Escaladarea necondiționată ar crește costul și riscul de conformitate fără
 
 ## Concluzie comercială
 
-Experimentul arată că un dataset UK company–VAT poate fi construit **parțial** din open web, cu dovezi puternice și precizie conservatoare pentru rezultatele acceptate. Nu arată că open web-ul singur poate furniza cele două treimi lipsă pentru cei 40.000 de furnizori. Prima trecere a confirmat 2 din 60 de companii, adică 3,3%, iar căutarea directă suplimentară a adăugat 0 din 20.
+Experimentul arată că un dataset UK company–VAT poate fi construit **parțial** din open web, cu dovezi puternice și precizie conservatoare pentru rezultatele acceptate. Nu arată că open web-ul singur poate furniza cele două treimi lipsă pentru cei 40.000 de furnizori. Prima trecere a confirmat 2 din 60 de companii, adică 3,3%.
 
-Prin urmare, nu aș promite clientului acoperirea cerută înaintea unui pilot pe furnizorii săi reali. Aș propune un produs hibrid: facturile autorizate ale clientului ca sursă first-party, open web și EORI pentru completare, surse comerciale pentru rezolvarea domeniului, HMRC pentru verificare și review uman pentru ambiguități. Valoarea vandabilă nu este lista de numere găsite, ci fiecare asociere companie–VAT însoțită de proveniență, verificare HMRC, scor de identitate și dată.
+Pentru scopul task-ului, răspunsul este clar: într-o variantă bazată doar pe web public, proiectul nu este încă suficient de bun pentru a justifica investiția la scară reală. Costul de descoperire a domeniului, crawl-ul, auditul surselor, verificarea HMRC și review-ul uman este prea mare în raport cu randamentul observat. În schimb, modelul care merită să fie continuat este hibrid: facturile autorizate ale clientului ca sursă first-party, open web și EORI pentru completare, surse comerciale pentru rezolvarea domeniului, HMRC pentru verificare și review uman pentru ambiguități.
 
-## Subiecte pentru discuție
+Valoarea vandabilă nu este lista de numere găsite, ci fiecare asociere companie–VAT însoțită de proveniență, verificare HMRC, scor de identitate și dată. În această formulare, proiectul este util ca dovadă de fezabilitate și pentru stabilirea blocajelor, dar nu ca soluție completă și automatizată de dimensiune de producție.
+
+
 
 ### Enumerarea numerelor VAT care trec verificarea checksum
 
