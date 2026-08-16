@@ -202,7 +202,7 @@ Pentru prima trecere pe cele 60 de companii, acoperirea măsurată este de 3,3%,
 
 ## Scalare și model de cost
 
-La scară de producție, etapele ar trebui separate astfel încât metodele costisitoare să fie folosite numai ca fallback:
+Etapele ar trebui separate astfel încât metodele costisitoare să fie folosite numai ca fallback:
 
 1. identificarea domeniului din seturi de date existente companie–domeniu sau prin căutare comercială;
 2. accesarea HTTP obișnuită a 5–10 pagini prioritizate pentru fiecare domeniu;
